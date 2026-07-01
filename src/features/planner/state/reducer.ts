@@ -229,9 +229,10 @@ function getStructureTiles(
   structX: number,
   structY: number,
   rotation: Rotation
-): { blocking: Set<string>; access: Set<string>; all: Set<string> } {
+): { blocking: Set<string>; access: Set<string>; construction: Set<string>; all: Set<string> } {
   const blocking = new Set<string>()
   const access = new Set<string>()
+  const construction = new Set<string>();
   const all = new Set<string>()
 
   if (structureDef.tileLayout && structureDef.tileLayout.tiles.length > 0) {
@@ -246,6 +247,8 @@ function getStructureTiles(
       all.add(key)
       if (tile.type === 'access') {
         access.add(key)
+      } else if (tile.type === 'construction') {
+        construction.add(key)
       } else {
         blocking.add(key)
       }
@@ -262,7 +265,7 @@ function getStructureTiles(
     }
   }
 
-  return { blocking, access, all }
+  return { blocking, access, construction, all }
 }
 
 /**
@@ -298,17 +301,25 @@ function hasCollision(
     // Get tiles for the existing structure
     const existingTiles = getStructureTiles(found.structure, struct.x, struct.y, struct.rotation)
 
-    // Rule 1: New blocking tiles cannot overlap with ANY existing tile
-    for (const tileKey of newTiles.blocking) {
+    // Rule 1: New construction tiles cannot overlap with ANY existing tile
+    for (const tileKey of newTiles.construction) {
       if (existingTiles.all.has(tileKey)) {
+        return true
+      }
+    } 
+    
+    // Rule 2: New blocking tiles cannot overlap with existing construction or access tiles
+    // (but CAN overlap with existing blocking tiles)
+    for (const tileKey of newTiles.blocking) {
+      if (existingTiles.construction.has(tileKey) || existingTiles.access.has(tileKey)) {
         return true
       }
     }
 
-    // Rule 2: New access tiles cannot overlap with existing blocking tiles
+    // Rule 2: New access tiles cannot overlap with existing construction or blocking tiles
     // (but CAN overlap with existing access tiles)
     for (const tileKey of newTiles.access) {
-      if (existingTiles.blocking.has(tileKey)) {
+      if (existingTiles.construction.has(tileKey) || existingTiles.blocking.has(tileKey)) {
         return true
       }
     }

@@ -259,6 +259,7 @@ function getStructureTiles(
     for (let dx = 0; dx < width; dx++) {
       for (let dy = 0; dy < height; dy++) {
         const key = `${structX + dx},${structY + dy}`
+        construction.add(key)
         blocking.add(key)
         all.add(key)
       }
